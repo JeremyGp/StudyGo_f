@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useLocation, useNavigate } from "react-router-dom";
-import Modal from "../../components/ui/Modal";  
+import Modal from "../../components/ui/Modal";
 
 function Dashboard() {
   const { user, logout } = useAuth();
@@ -11,7 +11,7 @@ function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState(null);
 
-  // 1. Datos por defecto por si el localStorage está vacío
+  // 1. Datos por defecto
   const defaultSubjects = [
     { name: "Diseño UX", professor: "Dra. Camila Ortiz", progress: 78, color: "bg-cyan-500" },
     { name: "Programación React", professor: "Ing. Mateo Silva", progress: 92, color: "bg-emerald-500" },
@@ -25,7 +25,7 @@ function Dashboard() {
     { title: "Tarea de SQL", course: "Bases de Datos", due: "Jue · 14:00", priority: "Baja", priorityClass: "bg-emerald-100 text-emerald-600" },
   ];
 
-  // 2. Inicializar estados con localStorage
+  // 2. LocalStorage
   const [subjects, setSubjects] = useState(() => {
     const saved = localStorage.getItem("studygo_subjects");
     return saved ? JSON.parse(saved) : defaultSubjects;
@@ -36,7 +36,6 @@ function Dashboard() {
     return saved ? JSON.parse(saved) : defaultDeadlines;
   });
 
-  // 3. Efectos para guardar en localStorage cada vez que cambian los datos
   useEffect(() => {
     localStorage.setItem("studygo_subjects", JSON.stringify(subjects));
   }, [subjects]);
@@ -57,26 +56,48 @@ function Dashboard() {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setModalContent(null);
+    setTimeout(() => setModalContent(null), 200); // Pequeño retraso para que la animación de cierre (si la hay) no pierda el contenido de golpe
   };
 
-  // 4. Funciones manejadoras (Handlers) para las acciones del Modal
+  // --- HANDLERS DE FORMULARIOS ---
   const handleCreateTask = (e) => {
     e.preventDefault();
     const title = e.target.elements.title.value;
     const course = e.target.elements.course.value;
     
-    if (!title || !course) return; // Validación básica
+    if (!title || !course) return;
 
     const newTask = {
       title,
       course,
-      due: "Próximamente", // Podrías formatear el date-local aquí
+      due: "Próximamente", 
       priority: "Media",
       priorityClass: "bg-amber-100 text-amber-600",
     };
 
     setDeadlines([...deadlines, newTask]);
+    handleCloseModal();
+  };
+
+  const handleCreateSubject = (e) => {
+    e.preventDefault();
+    const name = e.target.elements.name.value;
+    const professor = e.target.elements.professor.value;
+    
+    if (!name || !professor) return;
+
+    // Asignar un color aleatorio para la barra de progreso
+    const colors = ["bg-cyan-500", "bg-emerald-500", "bg-amber-500", "bg-violet-500", "bg-rose-500", "bg-blue-500"];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+
+    const newSubject = {
+      name,
+      professor,
+      progress: 0, // Inicia en 0%
+      color: randomColor,
+    };
+
+    setSubjects([...subjects, newSubject]);
     handleCloseModal();
   };
 
@@ -99,6 +120,19 @@ function Dashboard() {
     const updatedSubjects = subjects.filter(sub => sub.name !== modalContent.data.name);
     setSubjects(updatedSubjects);
     handleCloseModal();
+  };
+
+  // Títulos limpios para el Modal
+  const getModalTitle = (type) => {
+    switch(type) {
+      case 'seleccionarOpcion': return '¿Qué deseas agregar?';
+      case 'crearTarea': return 'Crear Nueva Tarea';
+      case 'crearCurso': return 'Agregar Nueva Asignatura';
+      case 'ver': return 'Detalles del Curso';
+      case 'editar': return 'Editar Asignatura';
+      case 'eliminar': return 'Eliminar Asignatura';
+      default: return 'Acción';
+    }
   };
 
   const menuItems = [
@@ -130,8 +164,9 @@ function Dashboard() {
     <>
       <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.15),_transparent_30%),linear-gradient(135deg,_#f8fafc_0%,_#eef2ff_100%)] text-slate-800">
         <div className="flex min-h-screen flex-col lg:flex-row">
+          
+          {/* SIDEBAR */}
           <aside className="flex w-full flex-shrink-0 flex-col rounded-b-[2rem] bg-slate-950 p-6 text-slate-200 shadow-2xl lg:sticky lg:top-0 lg:min-h-screen lg:w-72 lg:rounded-r-[2rem] lg:rounded-b-none">
-            {/* Cabecera del Sidebar */}
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 font-semibold text-slate-950">
                 S
@@ -142,7 +177,6 @@ function Dashboard() {
               </div>
             </div>
 
-            {/* Info de Usuario */}
             <div className="mt-8 rounded-2xl border border-white/10 bg-white/10 p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-400 font-semibold text-slate-950">
@@ -157,7 +191,6 @@ function Dashboard() {
               </div>
             </div>
 
-            {/* Menú de Navegación */}
             <nav className="mt-6 space-y-1">
               {menuItems.map((item) => {
                 const isActive = location.pathname === item.path;
@@ -190,9 +223,9 @@ function Dashboard() {
             </div>
           </aside>
 
+          {/* MAIN CONTENT */}
           <main className="flex-1">
             <div className="mx-auto w-full max-w-7xl p-4 md:p-6 lg:p-8">
-              {/* Topbar */}
               <header className="flex flex-col gap-4 rounded-[2rem] border border-white/70 bg-white/80 px-4 py-4 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between md:px-6">
                 <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                   <span className="text-slate-400">⌕</span>
@@ -222,7 +255,7 @@ function Dashboard() {
 
               <section className="mt-6 grid gap-6 xl:grid-cols-[1.6fr_0.8fr]">
                 <div className="space-y-6">
-                  {/* Tarjeta de Bienvenida */}
+                  {/* HERO SECTION */}
                   <div className="rounded-[2rem] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 text-white shadow-xl sm:p-6">
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                       <div>
@@ -237,14 +270,15 @@ function Dashboard() {
                         </p>
                       </div>
                       <button 
-                        onClick={() => handleOpenModal("crearTarea")}
+                        /* AQUI CAMBIAMOS LA ACCIÓN DEL BOTÓN PRINCIPAL */
+                        onClick={() => handleOpenModal("seleccionarOpcion")}
                         className="w-full rounded-2xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 shadow-lg transition hover:bg-cyan-300 sm:w-auto">
                         + Agregar curso o tarea
                       </button>
                     </div>
                   </div>
 
-                  {/* Tabla de Asignaturas */}
+                  {/* TABLA ASIGNATURAS */}
                   <div className="rounded-[2rem] bg-white p-4 shadow-sm sm:p-6">
                     <div className="flex items-center justify-between">
                       <div>
@@ -289,21 +323,9 @@ function Dashboard() {
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-2">
-                                  <button 
-                                    onClick={() => handleOpenModal("ver", subject)}
-                                    className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200">
-                                    Ver
-                                  </button>
-                                  <button 
-                                    onClick={() => handleOpenModal("editar", subject)}
-                                    className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200">
-                                    Editar
-                                  </button>
-                                  <button 
-                                    onClick={() => handleOpenModal("eliminar", subject)}
-                                    className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-200">
-                                    Eliminar
-                                  </button>
+                                  <button onClick={() => handleOpenModal("ver", subject)} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200">Ver</button>
+                                  <button onClick={() => handleOpenModal("editar", subject)} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200">Editar</button>
+                                  <button onClick={() => handleOpenModal("eliminar", subject)} className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-200">Eliminar</button>
                                 </div>
                               </td>
                             </tr>
@@ -313,7 +335,7 @@ function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Estadísticas */}
+                  {/* STATS */}
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {stats.map((stat) => (
                       <div key={stat.label} className="rounded-[1.5rem] bg-white p-4 shadow-sm">
@@ -326,9 +348,9 @@ function Dashboard() {
                   </div>
                 </div>
 
-                {/* Columna Derecha */}
+                {/* COLUMNA DERECHA */}
                 <div className="space-y-6">
-                  {/* Tareas */}
+                  {/* TAREAS */}
                   <div className="rounded-[2rem] bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div>
@@ -361,7 +383,6 @@ function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Rendimiento */}
                   <div className="rounded-[2rem] bg-gradient-to-br from-amber-50 to-orange-100 p-5 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div>
@@ -386,78 +407,144 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* 5. EL MODAL AHORA ESTÁ DENTRO DEL COMPONENTE */}
+      {/* --- RENDERIZADO DEL MODAL --- */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={`Acción: ${modalContent?.type?.toUpperCase()}`}
+        title={getModalTitle(modalContent?.type)}
       >
+        
+        {/* 1. ESTADO DE SELECCIÓN (NUEVO) */}
+        {modalContent?.type === "seleccionarOpcion" && (
+          <div className="flex flex-col gap-3 mt-2">
+            <p className="text-slate-500 text-sm mb-2">Elige qué elemento deseas incorporar a tu plataforma.</p>
+            
+            <button
+              onClick={() => handleOpenModal("crearCurso")}
+              className="group flex w-full items-center justify-between rounded-xl border border-slate-200 p-4 text-left transition hover:border-cyan-500 hover:bg-cyan-50"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-100 text-xl text-cyan-600 transition group-hover:bg-cyan-500 group-hover:text-white">
+                  ◫
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-800">Nueva Asignatura</p>
+                  <p className="text-xs text-slate-500">Agrega un curso a tu semestre actual</p>
+                </div>
+              </div>
+              <span className="text-slate-300 group-hover:text-cyan-500">→</span>
+            </button>
+
+            <button
+              onClick={() => handleOpenModal("crearTarea")}
+              className="group flex w-full items-center justify-between rounded-xl border border-slate-200 p-4 text-left transition hover:border-amber-500 hover:bg-amber-50"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-xl text-amber-600 transition group-hover:bg-amber-500 group-hover:text-white">
+                  📋
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-800">Nueva Tarea</p>
+                  <p className="text-xs text-slate-500">Programa un trabajo o examen</p>
+                </div>
+              </div>
+              <span className="text-slate-300 group-hover:text-amber-500">→</span>
+            </button>
+          </div>
+        )}
+
+        {/* 2. CREAR CURSO (NUEVO) */}
+        {modalContent?.type === "crearCurso" && (
+          <form onSubmit={handleCreateSubject} className="space-y-4 mt-2">
+            <div>
+              <label className="text-sm font-medium text-slate-700">Nombre de la Asignatura</label>
+              <input type="text" name="name" placeholder="Ej: Álgebra Lineal" className="mt-1 w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500" required />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">Profesor asignado</label>
+              <input type="text" name="professor" placeholder="Ej: Dra. Elena Montes" className="mt-1 w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500" required />
+            </div>
+            <button type="submit" className="w-full bg-cyan-500 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-cyan-600 transition mt-2">
+              Guardar Asignatura
+            </button>
+          </form>
+        )}
+
+        {/* 3. CREAR TAREA (YA EXISTÍA) */}
+        {modalContent?.type === "crearTarea" && (
+          <form onSubmit={handleCreateTask} className="space-y-4 mt-2">
+            <div>
+              <label className="text-sm font-medium text-slate-700">Título de la tarea</label>
+              <input type="text" name="title" placeholder="Ej: Proyecto Final React" className="mt-1 w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500" required />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">Curso correspondiente</label>
+              <input type="text" name="course" placeholder="Ej: Programación" className="mt-1 w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500" required />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700">Fecha límite</label>
+              <input type="datetime-local" name="due" className="mt-1 w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500" />
+            </div>
+            <button type="submit" className="w-full bg-cyan-500 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-cyan-600 transition mt-2">
+              Guardar Tarea
+            </button>
+          </form>
+        )}
+
+        {/* 4. VER, EDITAR, ELIMINAR CURSOS */}
         {modalContent?.type === "ver" && (
-          <div className="space-y-2 text-slate-700">
-            <p><strong>Curso:</strong> {modalContent.data.name}</p>
-            <p><strong>Profesor:</strong> {modalContent.data.professor}</p>
-            <p><strong>Progreso:</strong> {modalContent.data.progress}%</p>
+          <div className="space-y-3 text-slate-700 mt-2">
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <p className="text-xs text-slate-500 uppercase tracking-wider">Asignatura</p>
+              <p className="font-semibold text-lg text-slate-900">{modalContent.data.name}</p>
+            </div>
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <p className="text-xs text-slate-500 uppercase tracking-wider">Catedrático</p>
+              <p className="font-semibold text-slate-900">{modalContent.data.professor}</p>
+            </div>
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+              <p className="text-xs text-slate-500 uppercase tracking-wider">Progreso Actual</p>
+              <span className={`px-3 py-1 rounded-full text-white text-sm font-semibold ${modalContent.data.color}`}>
+                {modalContent.data.progress}%
+              </span>
+            </div>
           </div>
         )}
 
         {modalContent?.type === "editar" && (
-          <form onSubmit={handleEditSubject} className="space-y-3">
+          <form onSubmit={handleEditSubject} className="space-y-4 mt-2">
             <div>
               <label className="text-sm font-medium text-slate-700">Nombre del Curso</label>
-              <input
-                type="text"
-                name="name"
-                defaultValue={modalContent.data.name}
-                className="mt-1 w-full border border-slate-300 rounded-lg p-2 outline-none focus:border-cyan-500"
-                required
-              />
+              <input type="text" name="name" defaultValue={modalContent.data.name} className="mt-1 w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-cyan-500" required />
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700">Profesor</label>
-              <input
-                type="text"
-                name="professor"
-                defaultValue={modalContent.data.professor}
-                className="mt-1 w-full border border-slate-300 rounded-lg p-2 outline-none focus:border-cyan-500"
-                required
-              />
+              <input type="text" name="professor" defaultValue={modalContent.data.professor} className="mt-1 w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:border-cyan-500" required />
             </div>
-            <button type="submit" className="w-full bg-cyan-500 text-white px-4 py-2 rounded-lg hover:bg-cyan-600 transition">
-              Guardar cambios
+            <button type="submit" className="w-full bg-cyan-500 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-cyan-600 transition mt-2">
+              Actualizar Asignatura
             </button>
           </form>
         )}
 
         {modalContent?.type === "eliminar" && (
-          <div className="space-y-4">
-            <p className="text-slate-700">¿Seguro que deseas eliminar <strong>{modalContent.data.name}</strong>? Esta acción no se puede deshacer.</p>
-            <button 
-              onClick={handleDeleteSubject}
-              className="w-full bg-rose-500 text-white px-4 py-2 rounded-lg hover:bg-rose-600 transition">
-              Sí, eliminar curso
-            </button>
+          <div className="space-y-4 mt-2 text-center">
+            <div className="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">
+              !
+            </div>
+            <p className="text-slate-700">¿Estás completamente seguro de que deseas eliminar <strong>{modalContent.data.name}</strong>?</p>
+            <p className="text-sm text-slate-500">Esta acción removerá el curso de tu plan de estudios y no se puede deshacer.</p>
+            <div className="flex gap-3 mt-6">
+              <button onClick={handleCloseModal} className="flex-1 bg-slate-100 text-slate-700 px-4 py-2.5 rounded-lg font-semibold hover:bg-slate-200 transition">
+                Cancelar
+              </button>
+              <button onClick={handleDeleteSubject} className="flex-1 bg-rose-500 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-rose-600 transition">
+                Sí, eliminar
+              </button>
+            </div>
           </div>
         )}
 
-        {modalContent?.type === "crearTarea" && (
-          <form onSubmit={handleCreateTask} className="space-y-3">
-            <div>
-              <label className="text-sm font-medium text-slate-700">Título de la tarea</label>
-              <input type="text" name="title" placeholder="Ej: Proyecto React" className="mt-1 w-full border border-slate-300 rounded-lg p-2 outline-none focus:border-cyan-500" required />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-slate-700">Curso</label>
-              <input type="text" name="course" placeholder="Ej: Programación" className="mt-1 w-full border border-slate-300 rounded-lg p-2 outline-none focus:border-cyan-500" required />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-slate-700">Fecha de entrega</label>
-              <input type="datetime-local" name="due" className="mt-1 w-full border border-slate-300 rounded-lg p-2 outline-none focus:border-cyan-500" />
-            </div>
-            <button type="submit" className="w-full bg-cyan-500 text-white px-4 py-2 rounded-lg hover:bg-cyan-600 transition">
-              Crear tarea
-            </button>
-          </form>
-        )}
       </Modal>
     </>
   );
