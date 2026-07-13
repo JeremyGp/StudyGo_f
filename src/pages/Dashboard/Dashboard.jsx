@@ -11,12 +11,21 @@ function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState(null);
 
+  // --- NUEVA FUNCIÓN PARA COLORES DINÁMICOS ---
+  const getProgressStyles = (progressValue) => {
+    const value = parseInt(progressValue) || 0;
+    if (value <= 30) return { bg: "bg-rose-500", text: "text-rose-600" };
+    if (value <= 60) return { bg: "bg-amber-500", text: "text-amber-600" };
+    if (value <= 85) return { bg: "bg-cyan-500", text: "text-cyan-600" };
+    return { bg: "bg-emerald-500", text: "text-emerald-600" };
+  };
+
   // 1. Datos por defecto
   const defaultSubjects = [
-    { name: "Diseño UX", professor: "Dra. Camila Ortiz", progress: 78, color: "bg-cyan-500" },
-    { name: "Programación React", professor: "Ing. Mateo Silva", progress: 92, color: "bg-emerald-500" },
-    { name: "Bases de Datos", professor: "Lic. Mariana Vega", progress: 64, color: "bg-amber-500" },
-    { name: "Análisis de Datos", professor: "Mtro. Nicolás Pérez", progress: 81, color: "bg-violet-500" },
+    { name: "Diseño UX", professor: "Dra. Camila Ortiz", progress: 78 },
+    { name: "Programación React", professor: "Ing. Mateo Silva", progress: 92 },
+    { name: "Bases de Datos", professor: "Lic. Mariana Vega", progress: 64 },
+    { name: "Análisis de Datos", professor: "Mtro. Nicolás Pérez", progress: 81 },
   ];
 
   const defaultDeadlines = [
@@ -56,7 +65,7 @@ function Dashboard() {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setTimeout(() => setModalContent(null), 200); // Pequeño retraso para que la animación de cierre (si la hay) no pierda el contenido de golpe
+    setTimeout(() => setModalContent(null), 200);
   };
 
   // --- HANDLERS DE FORMULARIOS ---
@@ -86,15 +95,10 @@ function Dashboard() {
     
     if (!name || !professor) return;
 
-    // Asignar un color aleatorio para la barra de progreso
-    const colors = ["bg-cyan-500", "bg-emerald-500", "bg-amber-500", "bg-violet-500", "bg-rose-500", "bg-blue-500"];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
     const newSubject = {
       name,
       professor,
       progress: 0, // Inicia en 0%
-      color: randomColor,
     };
 
     setSubjects([...subjects, newSubject]);
@@ -270,7 +274,6 @@ function Dashboard() {
                         </p>
                       </div>
                       <button 
-                        /* AQUI CAMBIAMOS LA ACCIÓN DEL BOTÓN PRINCIPAL */
                         onClick={() => handleOpenModal("seleccionarOpcion")}
                         className="w-full rounded-2xl bg-cyan-400 px-4 py-3 font-semibold text-slate-950 shadow-lg transition hover:bg-cyan-300 sm:w-auto">
                         + Agregar curso o tarea
@@ -301,35 +304,39 @@ function Dashboard() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 bg-white">
-                          {subjects.map((subject) => (
-                            <tr key={subject.name} className="text-sm">
-                              <td className="px-4 py-3">
-                                <p className="font-semibold text-slate-800">{subject.name}</p>
-                                <p className="text-xs text-slate-500">Semestre actual</p>
-                              </td>
-                              <td className="px-4 py-3 text-slate-600">{subject.professor}</td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                  <div className="h-2.5 w-24 rounded-full bg-slate-100">
-                                    <div
-                                      className={`h-2.5 rounded-full ${subject.color}`}
-                                      style={{ width: `${subject.progress}%` }}
-                                    />
+                          {subjects.map((subject) => {
+                            const dynamicColor = getProgressStyles(subject.progress);
+                            
+                            return (
+                              <tr key={subject.name} className="text-sm">
+                                <td className="px-4 py-3">
+                                  <p className="font-semibold text-slate-800">{subject.name}</p>
+                                  <p className="text-xs text-slate-500">Semestre actual</p>
+                                </td>
+                                <td className="px-4 py-3 text-slate-600">{subject.professor}</td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-2.5 w-24 rounded-full bg-slate-100">
+                                      <div
+                                        className={`h-2.5 rounded-full ${dynamicColor.bg}`}
+                                        style={{ width: `${subject.progress}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-sm font-semibold text-slate-700">
+                                      {subject.progress}%
+                                    </span>
                                   </div>
-                                  <span className="text-sm font-semibold text-slate-700">
-                                    {subject.progress}%
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-2">
-                                  <button onClick={() => handleOpenModal("ver", subject)} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200">Ver</button>
-                                  <button onClick={() => handleOpenModal("editar", subject)} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200">Editar</button>
-                                  <button onClick={() => handleOpenModal("eliminar", subject)} className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-200">Eliminar</button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <button onClick={() => handleOpenModal("ver", subject)} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200">Ver</button>
+                                    <button onClick={() => handleOpenModal("editar", subject)} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200">Editar</button>
+                                    <button onClick={() => handleOpenModal("eliminar", subject)} className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-200">Eliminar</button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -413,12 +420,10 @@ function Dashboard() {
         onClose={handleCloseModal}
         title={getModalTitle(modalContent?.type)}
       >
-        
-        {/* 1. ESTADO DE SELECCIÓN (NUEVO) */}
+        {/* 1. ESTADO DE SELECCIÓN */}
         {modalContent?.type === "seleccionarOpcion" && (
           <div className="flex flex-col gap-3 mt-2">
             <p className="text-slate-500 text-sm mb-2">Elige qué elemento deseas incorporar a tu plataforma.</p>
-            
             <button
               onClick={() => handleOpenModal("crearCurso")}
               className="group flex w-full items-center justify-between rounded-xl border border-slate-200 p-4 text-left transition hover:border-cyan-500 hover:bg-cyan-50"
@@ -434,7 +439,6 @@ function Dashboard() {
               </div>
               <span className="text-slate-300 group-hover:text-cyan-500">→</span>
             </button>
-
             <button
               onClick={() => handleOpenModal("crearTarea")}
               className="group flex w-full items-center justify-between rounded-xl border border-slate-200 p-4 text-left transition hover:border-amber-500 hover:bg-amber-50"
@@ -453,7 +457,7 @@ function Dashboard() {
           </div>
         )}
 
-        {/* 2. CREAR CURSO (NUEVO) */}
+        {/* 2. CREAR CURSO */}
         {modalContent?.type === "crearCurso" && (
           <form onSubmit={handleCreateSubject} className="space-y-4 mt-2">
             <div>
@@ -470,7 +474,7 @@ function Dashboard() {
           </form>
         )}
 
-        {/* 3. CREAR TAREA (YA EXISTÍA) */}
+        {/* 3. CREAR TAREA */}
         {modalContent?.type === "crearTarea" && (
           <form onSubmit={handleCreateTask} className="space-y-4 mt-2">
             <div>
@@ -504,7 +508,7 @@ function Dashboard() {
             </div>
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
               <p className="text-xs text-slate-500 uppercase tracking-wider">Progreso Actual</p>
-              <span className={`px-3 py-1 rounded-full text-white text-sm font-semibold ${modalContent.data.color}`}>
+              <span className={`px-3 py-1 rounded-full text-white text-sm font-semibold ${getProgressStyles(modalContent.data.progress).bg}`}>
                 {modalContent.data.progress}%
               </span>
             </div>

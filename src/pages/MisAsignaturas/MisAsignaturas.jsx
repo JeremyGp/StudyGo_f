@@ -3,6 +3,15 @@ import PanelShell from "../../components/common/PanelShell";
 import Modal from "../../components/ui/Modal";
 
 function MisAsignaturas() {
+  // --- NUEVA FUNCIÓN PARA COLORES DINÁMICOS ---
+  const getProgressStyles = (progressValue) => {
+    const value = parseInt(progressValue) || 0;
+    if (value <= 30) return { bg: "bg-rose-500", accent: "accent-rose-500", text: "text-rose-600" };
+    if (value <= 60) return { bg: "bg-amber-500", accent: "accent-amber-500", text: "text-amber-600" };
+    if (value <= 85) return { bg: "bg-cyan-500", accent: "accent-cyan-500", text: "text-cyan-600" };
+    return { bg: "bg-emerald-500", accent: "accent-emerald-500", text: "text-emerald-600" };
+  };
+
   // 1. Estado sincronizado con LocalStorage
   const [asignaturas, setAsignaturas] = useState(() => {
     const saved = localStorage.getItem("studygo_subjects");
@@ -104,44 +113,48 @@ function MisAsignaturas() {
       {/* Grid de tarjetas filtradas */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filteredAsignaturas.length > 0 ? (
-          filteredAsignaturas.map((item) => (
-            <div key={item.name} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 shadow-sm transition-all hover:shadow-md">
-              
-              {/* Cabecera de la tarjeta con botón Editar */}
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-base font-bold text-cyan-700 leading-tight">{item.name}</p>
-                  <p className="mt-1 text-sm font-medium text-slate-500">{item.teacher}</p>
-                </div>
-                <button 
-                  onClick={() => openEditModal(item)}
-                  className="rounded-full bg-white border border-slate-200 p-2 text-xs text-slate-500 hover:bg-cyan-50 hover:text-cyan-600 hover:border-cyan-200 transition"
-                  title="Editar detalles"
-                >
-                  ✏️
-                </button>
-              </div>
-              
-              {/* Sección de Progreso Interactiva */}
-              <div className="mt-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Progreso actual</span>
-                  <span className="text-sm font-bold text-slate-700">{item.progress}</span>
+          filteredAsignaturas.map((item) => {
+            const dynamicStyles = getProgressStyles(item.progress); // <-- Calculamos colores aquí
+
+            return (
+              <div key={item.name} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 shadow-sm transition-all hover:shadow-md">
+                
+                {/* Cabecera de la tarjeta con botón Editar */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-base font-bold text-cyan-700 leading-tight">{item.name}</p>
+                    <p className="mt-1 text-sm font-medium text-slate-500">{item.teacher}</p>
+                  </div>
+                  <button 
+                    onClick={() => openEditModal(item)}
+                    className="rounded-full bg-white border border-slate-200 p-2 text-xs text-slate-500 hover:bg-cyan-50 hover:text-cyan-600 hover:border-cyan-200 transition"
+                    title="Editar detalles"
+                  >
+                    ✏️
+                  </button>
                 </div>
                 
-                {/* Input Range (Slider) */}
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={parseInt(item.progress) || 0}
-                  onChange={(e) => handleProgressChange(item.name, e.target.value)}
-                  className="w-full h-2 appearance-none cursor-pointer rounded-full bg-slate-200 accent-cyan-500 focus:outline-none"
-                />
-              </div>
+                {/* Sección de Progreso Interactiva */}
+                <div className="mt-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Progreso actual</span>
+                    <span className={`text-sm font-bold ${dynamicStyles.text}`}>{item.progress}</span>
+                  </div>
+                  
+                  {/* Input Range (Slider) con acento dinámico */}
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={parseInt(item.progress) || 0}
+                    onChange={(e) => handleProgressChange(item.name, e.target.value)}
+                    className={`w-full h-2 appearance-none cursor-pointer rounded-full bg-slate-200 focus:outline-none ${dynamicStyles.accent}`}
+                  />
+                </div>
 
-            </div>
-          ))
+              </div>
+            );
+          })
         ) : (
           <div className="col-span-full py-10 text-center text-slate-500">
             No se encontraron asignaturas que coincidan con tu búsqueda.
