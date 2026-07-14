@@ -7,7 +7,8 @@ function Ajustes() {
   const [perfil, setPerfil] = useState({
     nombre: '',
     correo: '',
-    biografia: ''
+    biografia: '',
+    avatar: '' // Añadimos el campo para la imagen en Base64
   });
 
   const [seguridad, setSeguridad] = useState({
@@ -23,6 +24,7 @@ function Ajustes() {
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [imagenSeleccionada, setImagenSeleccionada] = useState(null); // Estado para el archivo temporal
 
   // --- 2. CARGAR DATOS AL INICIAR ---
   useEffect(() => {
@@ -34,17 +36,16 @@ function Ajustes() {
     
     if (datosGuardados) {
       const datosParsed = JSON.parse(datosGuardados);
-      setPerfil(datosParsed.perfil || { nombre: '', correo: '', biografia: '' });
+      setPerfil(datosParsed.perfil || { nombre: '', correo: '', biografia: '', avatar: '' });
       setNotificaciones(datosParsed.notificaciones || { alertas: true, actualizaciones: false, resumen: true });
     } else {
-      // Datos por defecto simulando al usuario logeado
       setPerfil({
         nombre: 'Manuel Sebastian',
         correo: 'manuel@studygo.edu',
-        biografia: 'Desarrollador Full Stack con enfoque en la creación de interfaces dinámicas y seguras.'
+        biografia: 'Desarrollador Full Stack con enfoque en la creación de interfaces dinámicas y seguras.',
+        avatar: ''
       });
     }
-    // Limpiamos los campos de contraseña por seguridad visual
     setSeguridad({ actual: '', nueva: '', confirmar: '' });
   };
 
@@ -67,14 +68,49 @@ function Ajustes() {
     const datosAExportar = { perfil, notificaciones };
     localStorage.setItem('studygo_ajustes', JSON.stringify(datosAExportar));
     alert('¡Ajustes guardados correctamente en LocalStorage!');
-    // Aquí luego tu compañero solo agregará la llamada a su API
   };
 
   const descartarCambios = () => {
     cargarDatosLocales();
   };
 
-  // Extraer la primera letra del nombre para el Avatar
+  // --- 4. LÓGICA DE SUBIDA DE IMAGEN (Local) ---
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImagenSeleccionada(file);
+    }
+  };
+
+  const procesarSubidaImagen = () => {
+    if (!imagenSeleccionada) {
+      alert("Por favor selecciona una imagen primero.");
+      return;
+    }
+
+    const reader = new FileReader();
+    
+    // Cuando termine de leer el archivo, se ejecuta esto:
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      
+      // Actualizamos el perfil con la nueva imagen
+      setPerfil(prev => ({ ...prev, avatar: base64String }));
+      
+      // Limpiamos y cerramos el modal
+      setImagenSeleccionada(null);
+      setIsModalOpen(false);
+    };
+
+    // Leemos el archivo como una URL de datos (Base64)
+    reader.readAsDataURL(imagenSeleccionada);
+  };
+
+  const cerrarModal = () => {
+    setIsModalOpen(false);
+    setImagenSeleccionada(null);
+  };
+
   const inicial = perfil.nombre ? perfil.nombre.charAt(0).toUpperCase() : 'U';
 
   return (
@@ -95,14 +131,22 @@ function Ajustes() {
             </div>
             
             <div className="flex flex-col md:flex-row gap-8">
-              {/* Avatar con Inicial Dinámica */}
+              {/* Avatar Dinámico */}
               <div className="flex flex-col items-center shrink-0">
                 <div className="relative w-32 h-32 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 shadow-inner flex items-center justify-center">
                   
-                  {/* Fondo degradado con la letra inicial */}
-                  <div className="w-full h-full bg-gradient-to-br from-[#3b4c7a] to-[#1e2743] flex items-center justify-center text-white text-5xl font-bold">
-                    {inicial}
-                  </div>
+                  {/* Renderizado condicional: Imagen Base64 o Inicial */}
+                  {perfil.avatar ? (
+                    <img 
+                      src={perfil.avatar} 
+                      alt="Perfil" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#3b4c7a] to-[#1e2743] flex items-center justify-center text-white text-5xl font-bold">
+                      {inicial}
+                    </div>
+                  )}
 
                   <button 
                     onClick={() => setIsModalOpen(true)}
@@ -114,7 +158,7 @@ function Ajustes() {
                 <span className="text-xs text-slate-400 mt-3">Haz clic para subir foto</span>
               </div>
 
-              {/* Formulario de Perfil (Controlado por Estado) */}
+              {/* Formulario de Perfil */}
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre Completo</label>
@@ -213,7 +257,6 @@ function Ajustes() {
             </div>
 
             <div className="space-y-5">
-              {/* Toggle 1: Alertas */}
               <div className="flex justify-between items-center pb-4 border-b border-slate-100">
                 <div className="pr-4">
                   <p className="font-semibold text-sm text-slate-800">Alertas de Vencimiento</p>
@@ -227,7 +270,6 @@ function Ajustes() {
                 </button>
               </div>
 
-              {/* Toggle 2: Actualizaciones */}
               <div className="flex justify-between items-center pb-4 border-b border-slate-100">
                 <div className="pr-4">
                   <p className="font-semibold text-sm text-slate-800">Actualizaciones de Tutor</p>
@@ -241,7 +283,6 @@ function Ajustes() {
                 </button>
               </div>
 
-              {/* Toggle 3: Resumen */}
               <div className="flex justify-between items-center">
                 <div className="pr-4">
                   <p className="font-semibold text-sm text-slate-800">Resumen Semanal</p>
@@ -287,35 +328,34 @@ function Ajustes() {
         </div>
       </div>
 
-      {/* --- MODAL PARA SUBIR FOTO (Overlay Integrado) --- */}
+      {/* --- MODAL PARA SUBIR FOTO --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white w-[90%] max-w-md rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
             
-            {/* Header del Modal */}
             <div className="flex justify-between items-center p-5 border-b border-slate-100">
               <h3 className="font-semibold text-slate-800 text-lg">Actualizar Foto de Perfil</h3>
               <button 
-                onClick={() => setIsModalOpen(false)}
+                onClick={cerrarModal}
                 className="text-slate-400 hover:text-slate-700 transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
 
-            {/* Body del Modal */}
             <div className="p-6 flex flex-col items-center justify-center gap-4">
               <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-[#3b4c7a] border-2 border-dashed border-slate-300">
                 <Upload size={28} />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-slate-800">Haz clic para seleccionar o arrastra una imagen</p>
+                <p className="text-sm font-medium text-slate-800">Selecciona una imagen de tu computadora</p>
                 <p className="text-xs text-slate-500 mt-1">Soporta JPG y PNG. Tamaño máximo: 5MB.</p>
               </div>
               
               <input 
                 type="file" 
                 accept="image/png, image/jpeg" 
+                onChange={handleFileChange}
                 className="block w-full text-sm text-slate-500
                   file:mr-4 file:py-2 file:px-4
                   file:rounded-full file:border-0
@@ -323,22 +363,26 @@ function Ajustes() {
                   file:bg-[#f0f4f8] file:text-[#3b4c7a]
                   hover:file:bg-slate-200 cursor-pointer transition-all mt-2"
               />
+              
+              {/* Mostramos el nombre del archivo si ya seleccionó uno */}
+              {imagenSeleccionada && (
+                <p className="text-xs text-green-600 font-medium mt-2">
+                  Archivo listo: {imagenSeleccionada.name}
+                </p>
+              )}
             </div>
 
-            {/* Footer del Modal */}
             <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
               <button 
-                onClick={() => setIsModalOpen(false)}
+                onClick={cerrarModal}
                 className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
               >
                 Cancelar
               </button>
               <button 
-                onClick={() => {
-                  alert("Aquí procesarías la subida de la imagen. ¡Cerrando modal!");
-                  setIsModalOpen(false);
-                }}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#3b4c7a] rounded-md hover:bg-[#2d3a5e] transition-colors"
+                onClick={procesarSubidaImagen}
+                className="px-4 py-2 text-sm font-medium text-white bg-[#3b4c7a] rounded-md hover:bg-[#2d3a5e] transition-colors disabled:opacity-50"
+                disabled={!imagenSeleccionada}
               >
                 Subir Imagen
               </button>
