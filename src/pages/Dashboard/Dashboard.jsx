@@ -194,15 +194,9 @@ function Dashboard() {
           <aside className="flex w-full flex-shrink-0 flex-col rounded-b-[2rem] bg-slate-950 p-6 text-slate-200 shadow-2xl lg:sticky lg:top-0 lg:min-h-screen lg:w-72 lg:rounded-b-none lg:rounded-r-[2rem]">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 font-semibold text-slate-950">S</div>
-              <div><p className="text-xl font-semibold text-white">StudyGo</p><p className="text-sm text-slate-400">Planificador académico</p></div>
+              <div><p className="text-xl font-semibold text-white">StudyGo</p><p className="text-sm text-slate-400">Plataforma educativa</p></div>
             </div>
-            <div className="mt-8 rounded-2xl border border-white/10 bg-white/10 p-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cyan-400 font-semibold text-slate-950">{user?.nombre?.charAt(0).toUpperCase() || "U"}</div>
-                <div><p className="font-semibold text-white">{user?.nombre || "Usuario"}</p><p className="text-sm text-slate-400">Estudiante</p></div>
-              </div>
-            </div>
-            <nav className="mt-6 space-y-1">
+            <nav className="mt-8 space-y-1">
               {menuItems.map((item) => (
                 <button key={item.name} onClick={() => navigate(item.path)} className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium transition ${location.pathname === item.path ? "bg-cyan-500 text-slate-950" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}>
                   <span>{item.icon}</span><span>{item.name}</span>
