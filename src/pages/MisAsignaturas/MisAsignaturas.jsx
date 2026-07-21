@@ -3,7 +3,7 @@ import PanelShell from "../../components/common/PanelShell";
 import Modal from "../../components/ui/Modal";
 
 function MisAsignaturas() {
-  // --- NUEVA FUNCIÓN PARA COLORES DINÁMICOS ---
+  // --- FUNCIÓN PARA COLORES DINÁMICOS ---
   const getProgressStyles = (progressValue) => {
     const value = parseInt(progressValue) || 0;
     if (value <= 30) return { bg: "bg-rose-500", accent: "accent-rose-500", text: "text-rose-600" };
@@ -12,13 +12,13 @@ function MisAsignaturas() {
     return { bg: "bg-emerald-500", accent: "accent-emerald-500", text: "text-emerald-600" };
   };
 
-  // 1. Estado sincronizado con LocalStorage (añadidos código y aula al estado inicial)
+  // 1. Estado sincronizado con LocalStorage (añadido horario al estado inicial)
   const [asignaturas, setAsignaturas] = useState(() => {
     const saved = localStorage.getItem("studygo_subjects");
     return saved ? JSON.parse(saved) : [
-      { name: "Diseño UX", teacher: "Dra. Camila Ortiz", progress: "78%", codigo: "UX-101", aula: "Lab 3" },
-      { name: "Programación React", teacher: "Ing. Mateo Silva", progress: "92%", codigo: "DEV-202", aula: "Auditorio A" },
-      { name: "Bases de Datos", teacher: "Lic. Mariana Vega", progress: "64%", codigo: "BD-303", aula: "Edificio B, Aula 304" },
+      { name: "Diseño UX", teacher: "Dra. Camila Ortiz", progress: "78%", codigo: "UX-101", aula: "Lab 3", horario: "Lun, Mié 10:00 - 12:00" },
+      { name: "Programación React", teacher: "Ing. Mateo Silva", progress: "92%", codigo: "DEV-202", aula: "Auditorio A", horario: "Mar, Jue 14:00 - 16:00" },
+      { name: "Bases de Datos", teacher: "Lic. Mariana Vega", progress: "64%", codigo: "BD-303", aula: "Edificio B, Aula 304", horario: "Vie 08:00 - 11:00" },
     ];
   });
 
@@ -37,20 +37,21 @@ function MisAsignaturas() {
     e.preventDefault();
     const name = e.target.elements.name.value;
     const teacher = e.target.elements.teacher.value;
-    const codigo = e.target.elements.codigo.value; // NUEVO
-    const aula = e.target.elements.aula.value;     // NUEVO
+    const codigo = e.target.elements.codigo.value; 
+    const aula = e.target.elements.aula.value;     
+    const horario = e.target.elements.horario.value; // NUEVO: Capturar horario
     
     if (!name || !teacher) return;
 
     if (editingSubject) {
       // Modo Edición: Actualizar el existente
       const updatedAsignaturas = asignaturas.map(sub => 
-        sub.name === editingSubject.name ? { ...sub, name, teacher, codigo, aula } : sub
+        sub.name === editingSubject.name ? { ...sub, name, teacher, codigo, aula, horario } : sub
       );
       setAsignaturas(updatedAsignaturas);
     } else {
       // Modo Creación: Agregar nuevo
-      const newSubject = { name, teacher, codigo, aula, progress: "0%" };
+      const newSubject = { name, teacher, codigo, aula, horario, progress: "0%" };
       setAsignaturas([...asignaturas, newSubject]);
     }
 
@@ -77,7 +78,7 @@ function MisAsignaturas() {
     setIsModalOpen(true);
   };
 
-  // 7. Filtrar resultados del buscador (añadido filtro por código)
+  // 7. Filtrar resultados del buscador
   const filteredAsignaturas = asignaturas.filter(sub => 
     sub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     sub.teacher.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -129,7 +130,6 @@ function MisAsignaturas() {
                     <p className="mt-1 text-sm font-medium text-slate-600 flex items-center gap-1">
                       <span className="text-slate-400">🎓</span> {item.teacher}
                     </p>
-                    {/* NUEVOS DATOS EN LA TARJETA */}
                     <div className="mt-2 flex flex-col gap-1">
                       {item.codigo && (
                         <p className="text-xs text-slate-500 flex items-center gap-1.5">
@@ -139,6 +139,12 @@ function MisAsignaturas() {
                       {item.aula && (
                         <p className="text-xs text-slate-500 flex items-center gap-1.5">
                           <span className="text-slate-400">📍</span> {item.aula}
+                        </p>
+                      )}
+                      {/* NUEVO: Mostrar horario en la tarjeta */}
+                      {item.horario && (
+                        <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                          <span className="text-slate-400">🕒</span> {item.horario}
                         </p>
                       )}
                     </div>
@@ -200,7 +206,6 @@ function MisAsignaturas() {
             />
           </div>
 
-          {/* NUEVO: Campo Código con ícono basado en la imagen */}
           <div>
             <label className="text-sm font-medium text-slate-700">Código</label>
             <div className="relative mt-1">
@@ -217,7 +222,6 @@ function MisAsignaturas() {
             </div>
           </div>
 
-          {/* MODIFICADO: Profesor adaptado para usar ícono como en la imagen */}
           <div>
             <label className="text-sm font-medium text-slate-700">Profesor / Catedrático</label>
             <div className="relative mt-1">
@@ -235,7 +239,6 @@ function MisAsignaturas() {
             </div>
           </div>
 
-          {/* NUEVO: Campo Aula / Ubicación con ícono basado en la imagen */}
           <div>
             <label className="text-sm font-medium text-slate-700">Aula / Ubicación</label>
             <div className="relative mt-1">
@@ -247,6 +250,23 @@ function MisAsignaturas() {
                 name="aula" 
                 defaultValue={editingSubject?.aula || ""}
                 placeholder="Edificio B, Aula 304" 
+                className="w-full rounded-lg border border-slate-300 p-2.5 pl-9 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500" 
+              />
+            </div>
+          </div>
+
+          {/* NUEVO: Campo Horario */}
+          <div>
+            <label className="text-sm font-medium text-slate-700">Horario</label>
+            <div className="relative mt-1">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                🕒
+              </span>
+              <input 
+                type="text" 
+                name="horario" 
+                defaultValue={editingSubject?.horario || ""}
+                placeholder="Ej: Lun y Mié 10:00 - 12:00" 
                 className="w-full rounded-lg border border-slate-300 p-2.5 pl-9 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500" 
               />
             </div>
