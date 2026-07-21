@@ -1,397 +1,257 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { Info, LockKeyhole, Mail, Shield, User } from "lucide-react";
+
 import PanelShell from "../../components/common/PanelShell";
-import { User, Shield, Bell, Lightbulb, Pencil, Info, X, Upload } from 'lucide-react';
+import { useAuth } from "../../hooks/useAuth";
+import { usuarioService } from "../../services/usuario";
+import { userUpdated } from "../../store/authSlice";
+
+const EMPTY_PASSWORDS = { nueva: "", confirmar: "" };
+
+const getErrorMessage = (error, fallback) =>
+  error.response?.data?.detail || error.message || fallback;
 
 function Ajustes() {
-  // --- 1. ESTADOS LOCALES ---
-  const [perfil, setPerfil] = useState({
-    nombre: '',
-    correo: '',
-    biografia: '',
-    avatar: '' // Añadimos el campo para la imagen en Base64
-  });
+  const { user, logout } = useAuth();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [perfil, setPerfil] = useState({ nombre: "", correo: "" });
+  const [seguridad, setSeguridad] = useState(EMPTY_PASSWORDS);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const [seguridad, setSeguridad] = useState({
-    actual: '',
-    nueva: '',
-    confirmar: ''
-  });
-
-  const [notificaciones, setNotificaciones] = useState({
-    alertas: true,
-    actualizaciones: false,
-    resumen: true
-  });
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [imagenSeleccionada, setImagenSeleccionada] = useState(null); // Estado para el archivo temporal
-
-  // --- 2. CARGAR DATOS AL INICIAR ---
   useEffect(() => {
-    cargarDatosLocales();
-  }, []);
-
-  const cargarDatosLocales = () => {
-    const datosGuardados = localStorage.getItem('studygo_ajustes');
-    
-    if (datosGuardados) {
-      const datosParsed = JSON.parse(datosGuardados);
-      setPerfil(datosParsed.perfil || { nombre: '', correo: '', biografia: '', avatar: '' });
-      setNotificaciones(datosParsed.notificaciones || { alertas: true, actualizaciones: false, resumen: true });
-    } else {
-      setPerfil({
-        nombre: 'Manuel Sebastian',
-        correo: 'manuel@studygo.edu',
-        biografia: 'Desarrollador Full Stack con enfoque en la creación de interfaces dinámicas y seguras.',
-        avatar: ''
-      });
+    if (user) {
+      setPerfil({ nombre: user.nombre || "", correo: user.correo || "" });
     }
-    setSeguridad({ actual: '', nueva: '', confirmar: '' });
+  }, [user]);
+
+  const handleProfileChange = (event) => {
+    const { name, value } = event.target;
+    setPerfil((current) => ({ ...current, [name]: value }));
   };
 
-  // --- 3. MANEJADORES DE EVENTOS ---
-  const handlePerfilChange = (e) => {
-    const { name, value } = e.target;
-    setPerfil(prev => ({ ...prev, [name]: value }));
+  const handlePasswordChange = (event) => {
+    const { name, value } = event.target;
+    setSeguridad((current) => ({ ...current, [name]: value }));
   };
 
-  const handleSeguridadChange = (e) => {
-    const { name, value } = e.target;
-    setSeguridad(prev => ({ ...prev, [name]: value }));
+  const discardChanges = () => {
+    setPerfil({ nombre: user?.nombre || "", correo: user?.correo || "" });
+    setSeguridad(EMPTY_PASSWORDS);
+    setError("");
+    setSuccess("");
   };
 
-  const toggleNotificacion = (key) => {
-    setNotificaciones(prev => ({ ...prev, [key]: !prev[key] }));
-  };
+  const saveChanges = async (event) => {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
 
-  const guardarCambios = () => {
-    const datosAExportar = { perfil, notificaciones };
-    localStorage.setItem('studygo_ajustes', JSON.stringify(datosAExportar));
-    alert('¡Ajustes guardados correctamente en LocalStorage!');
-  };
-
-  const descartarCambios = () => {
-    cargarDatosLocales();
-  };
-
-  // --- 4. LÓGICA DE SUBIDA DE IMAGEN (Local) ---
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImagenSeleccionada(file);
+    const nombre = perfil.nombre.trim();
+    const correo = perfil.correo.trim();
+    if (nombre.length < 2) {
+      setError("El nombre debe tener al menos 2 caracteres.");
+      return;
     }
-  };
-
-  const procesarSubidaImagen = () => {
-    if (!imagenSeleccionada) {
-      alert("Por favor selecciona una imagen primero.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+      setError("Ingresa un correo electrónico válido.");
+      return;
+    }
+    if (seguridad.nueva && seguridad.nueva.length < 8) {
+      setError("La nueva contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+    if (seguridad.nueva !== seguridad.confirmar) {
+      setError("Las contraseñas no coinciden.");
       return;
     }
 
-    const reader = new FileReader();
-    
-    // Cuando termine de leer el archivo, se ejecuta esto:
-    reader.onloadend = () => {
-      const base64String = reader.result;
-      
-      // Actualizamos el perfil con la nueva imagen
-      setPerfil(prev => ({ ...prev, avatar: base64String }));
-      
-      // Limpiamos y cerramos el modal
-      setImagenSeleccionada(null);
-      setIsModalOpen(false);
-    };
+    const payload = { nombre, correo };
+    if (seguridad.nueva) payload.contrasena = seguridad.nueva;
+    const emailChanged = correo !== user.correo;
 
-    // Leemos el archivo como una URL de datos (Base64)
-    reader.readAsDataURL(imagenSeleccionada);
+    setSaving(true);
+    try {
+      const updatedUser = await usuarioService.actualizar(user.id_usuario, payload);
+      dispatch(userUpdated(updatedUser));
+      setSeguridad(EMPTY_PASSWORDS);
+
+      if (emailChanged) {
+        setSuccess("Perfil actualizado. Debes iniciar sesión nuevamente porque cambió tu correo.");
+        window.setTimeout(() => {
+          logout();
+          navigate("/");
+        }, 1800);
+      } else {
+        setSuccess("Información actualizada correctamente.");
+      }
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, "No fue posible actualizar tu información."));
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const cerrarModal = () => {
-    setIsModalOpen(false);
-    setImagenSeleccionada(null);
-  };
-
-  const inicial = perfil.nombre ? perfil.nombre.charAt(0).toUpperCase() : 'U';
+  const initial = perfil.nombre.charAt(0).toUpperCase() || "U";
+  const hasChanges =
+    perfil.nombre !== (user?.nombre || "") ||
+    perfil.correo !== (user?.correo || "") ||
+    Boolean(seguridad.nueva || seguridad.confirmar);
 
   return (
     <PanelShell
-      title="Ajustes de Cuenta"
-      subtitle="Administra tu identidad académica y preferencias de seguridad."
+      title="Ajustes de cuenta"
+      subtitle="Actualiza tu información personal y las credenciales de acceso."
     >
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 relative">
-        
-        {/* COLUMNA IZQUIERDA (Perfil y Seguridad) */}
-        <div className="xl:col-span-8 flex flex-col gap-6">
-          
-          {/* Tarjeta de Perfil */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <User className="text-slate-500" size={22} />
-              <h2 className="text-lg font-semibold text-slate-800">Perfil</h2>
-            </div>
-            
-            <div className="flex flex-col md:flex-row gap-8">
-              {/* Avatar Dinámico */}
-              <div className="flex flex-col items-center shrink-0">
-                <div className="relative w-32 h-32 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 shadow-inner flex items-center justify-center">
-                  
-                  {/* Renderizado condicional: Imagen Base64 o Inicial */}
-                  {perfil.avatar ? (
-                    <img 
-                      src={perfil.avatar} 
-                      alt="Perfil" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[#3b4c7a] to-[#1e2743] flex items-center justify-center text-white text-5xl font-bold">
-                      {inicial}
-                    </div>
-                  )}
-
-                  <button 
-                    onClick={() => setIsModalOpen(true)}
-                    className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white p-2 rounded-full hover:bg-black transition-all"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                </div>
-                <span className="text-xs text-slate-400 mt-3">Haz clic para subir foto</span>
-              </div>
-
-              {/* Formulario de Perfil */}
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Nombre Completo</label>
-                  <input 
-                    type="text" 
-                    name="nombre"
-                    value={perfil.nombre}
-                    onChange={handlePerfilChange}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3b4c7a] focus:border-transparent transition-all" 
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Correo Electrónico</label>
-                  <input 
-                    type="email" 
-                    name="correo"
-                    value={perfil.correo}
-                    onChange={handlePerfilChange}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3b4c7a] focus:border-transparent transition-all" 
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Biografía Académica</label>
-                  <textarea 
-                    rows="3"
-                    name="biografia"
-                    value={perfil.biografia}
-                    onChange={handlePerfilChange}
-                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3b4c7a] focus:border-transparent resize-none transition-all" 
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tarjeta de Seguridad */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <Shield className="text-[#3b4c7a]" size={22} />
-              <h2 className="text-lg font-semibold text-slate-800">Seguridad</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Contraseña Actual</label>
-                <input 
-                  type="password" 
-                  name="actual"
-                  value={seguridad.actual}
-                  onChange={handleSeguridadChange}
-                  placeholder="••••••••"
-                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3b4c7a] transition-all" 
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Nueva Contraseña</label>
-                <input 
-                  type="password" 
-                  name="nueva"
-                  value={seguridad.nueva}
-                  onChange={handleSeguridadChange}
-                  placeholder="••••••••"
-                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3b4c7a] transition-all" 
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Confirmar Nueva Contraseña</label>
-                <input 
-                  type="password" 
-                  name="confirmar"
-                  value={seguridad.confirmar}
-                  onChange={handleSeguridadChange}
-                  placeholder="••••••••"
-                  className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#3b4c7a] transition-all" 
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 bg-[#f0f4f8] text-[#2c3e50] p-4 rounded-lg flex items-start gap-3 border border-slate-100">
-              <Info size={20} className="text-[#3b4c7a] shrink-0 mt-0.5" />
-              <p className="text-sm font-medium">
-                La contraseña debe tener al menos 8 caracteres, incluyendo una letra mayúscula y un número.
-              </p>
-            </div>
-          </div>
+      {error && (
+        <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+          {error}
         </div>
-
-        {/* COLUMNA DERECHA (Notificaciones y Acciones) */}
-        <div className="xl:col-span-4 flex flex-col gap-6">
-          
-          {/* Tarjeta de Notificaciones */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <Bell className="text-[#3b4c7a]" size={22} />
-              <h2 className="text-lg font-semibold text-slate-800">Notificaciones</h2>
-            </div>
-
-            <div className="space-y-5">
-              <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-                <div className="pr-4">
-                  <p className="font-semibold text-sm text-slate-800">Alertas de Vencimiento</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Recordatorios 24h antes de una entrega.</p>
-                </div>
-                <button 
-                  onClick={() => toggleNotificacion('alertas')}
-                  className={`w-11 h-6 rounded-full relative flex items-center px-1 shrink-0 transition-colors ${notificaciones.alertas ? 'bg-[#3b4c7a]' : 'bg-slate-200'}`}
-                >
-                  <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${notificaciones.alertas ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                </button>
-              </div>
-
-              <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-                <div className="pr-4">
-                  <p className="font-semibold text-sm text-slate-800">Actualizaciones de Tutor</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Nuevos mensajes o correcciones.</p>
-                </div>
-                <button 
-                  onClick={() => toggleNotificacion('actualizaciones')}
-                  className={`w-11 h-6 rounded-full relative flex items-center px-1 shrink-0 transition-colors ${notificaciones.actualizaciones ? 'bg-[#3b4c7a]' : 'bg-slate-200'}`}
-                >
-                  <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${notificaciones.actualizaciones ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                </button>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <div className="pr-4">
-                  <p className="font-semibold text-sm text-slate-800">Resumen Semanal</p>
-                  <p className="text-xs text-slate-500 mt-0.5">Progreso y agenda de la próxima semana.</p>
-                </div>
-                <button 
-                  onClick={() => toggleNotificacion('resumen')}
-                  className={`w-11 h-6 rounded-full relative flex items-center px-1 shrink-0 transition-colors ${notificaciones.resumen ? 'bg-[#3b4c7a]' : 'bg-slate-200'}`}
-                >
-                  <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${notificaciones.resumen ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Botones de Acción */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-3">
-            <button 
-              onClick={guardarCambios}
-              className="w-full bg-[#3b4c7a] hover:bg-[#2d3a5e] text-white font-medium py-2.5 rounded-md transition-colors flex items-center justify-center gap-2"
-            >
-              Guardar Cambios
-            </button>
-            <button 
-              onClick={descartarCambios}
-              className="w-full bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 font-medium py-2.5 rounded-md transition-colors"
-            >
-              Descartar
-            </button>
-          </div>
-
-          {/* Tarjeta de Consejo */}
-          <div className="bg-[#fdf8f3] border border-[#f5e6d3] rounded-xl p-5 shadow-sm text-[#8b6b4a]">
-            <div className="flex items-center gap-2 mb-2 font-semibold">
-              <Lightbulb size={18} className="text-[#d49a5b]" />
-              <h3>Consejo de Estudio</h3>
-            </div>
-            <p className="text-xs leading-relaxed text-[#7a5c40]">
-              Mantener tu perfil actualizado ayuda a los tutores a identificarte mejor en las sesiones grupales. ¡No olvides subir una foto clara!
-            </p>
-          </div>
-
-        </div>
-      </div>
-
-      {/* --- MODAL PARA SUBIR FOTO --- */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white w-[90%] max-w-md rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
-            
-            <div className="flex justify-between items-center p-5 border-b border-slate-100">
-              <h3 className="font-semibold text-slate-800 text-lg">Actualizar Foto de Perfil</h3>
-              <button 
-                onClick={cerrarModal}
-                className="text-slate-400 hover:text-slate-700 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="p-6 flex flex-col items-center justify-center gap-4">
-              <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center text-[#3b4c7a] border-2 border-dashed border-slate-300">
-                <Upload size={28} />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-medium text-slate-800">Selecciona una imagen de tu computadora</p>
-                <p className="text-xs text-slate-500 mt-1">Soporta JPG y PNG. Tamaño máximo: 5MB.</p>
-              </div>
-              
-              <input 
-                type="file" 
-                accept="image/png, image/jpeg" 
-                onChange={handleFileChange}
-                className="block w-full text-sm text-slate-500
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-full file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-[#f0f4f8] file:text-[#3b4c7a]
-                  hover:file:bg-slate-200 cursor-pointer transition-all mt-2"
-              />
-              
-              {/* Mostramos el nombre del archivo si ya seleccionó uno */}
-              {imagenSeleccionada && (
-                <p className="text-xs text-green-600 font-medium mt-2">
-                  Archivo listo: {imagenSeleccionada.name}
-                </p>
-              )}
-            </div>
-
-            <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
-              <button 
-                onClick={cerrarModal}
-                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={procesarSubidaImagen}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#3b4c7a] rounded-md hover:bg-[#2d3a5e] transition-colors disabled:opacity-50"
-                disabled={!imagenSeleccionada}
-              >
-                Subir Imagen
-              </button>
-            </div>
-          </div>
+      )}
+      {success && (
+        <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+          {success}
         </div>
       )}
 
+      <form onSubmit={saveChanges} className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        <div className="flex flex-col gap-6 xl:col-span-8">
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-6 flex items-center gap-2">
+              <User className="text-slate-500" size={22} />
+              <h2 className="text-lg font-semibold text-slate-800">Información personal</h2>
+            </div>
+
+            <div className="flex flex-col gap-8 md:flex-row">
+              <div className="flex shrink-0 flex-col items-center">
+                <div className="flex h-32 w-32 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3b4c7a] to-[#1e2743] text-5xl font-bold text-white shadow-inner">
+                  {initial}
+                </div>
+                <span className="mt-3 text-xs text-slate-400">Identidad de StudyGo</span>
+              </div>
+
+              <div className="grid flex-1 grid-cols-1 gap-5 md:grid-cols-2">
+                <Field
+                  icon={<User size={17} />}
+                  label="Nombre completo"
+                  type="text"
+                  name="nombre"
+                  value={perfil.nombre}
+                  onChange={handleProfileChange}
+                  minLength={2}
+                  maxLength={100}
+                  required
+                />
+                <Field
+                  icon={<Mail size={17} />}
+                  label="Correo electrónico"
+                  type="email"
+                  name="correo"
+                  value={perfil.correo}
+                  onChange={handleProfileChange}
+                  required
+                />
+                <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-500 md:col-span-2">
+                  <p><strong className="text-slate-700">Usuario:</strong> #{user?.id_usuario}</p>
+                  <p className="mt-1"><strong className="text-slate-700">Cuenta creada:</strong> {user?.fecha_registro ? new Date(user.fecha_registro).toLocaleDateString("es-CO") : "Sin información"}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-6 flex items-center gap-2">
+              <Shield className="text-[#3b4c7a]" size={22} />
+              <h2 className="text-lg font-semibold text-slate-800">Cambiar contraseña</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <Field
+                icon={<LockKeyhole size={17} />}
+                label="Nueva contraseña"
+                type="password"
+                name="nueva"
+                value={seguridad.nueva}
+                onChange={handlePasswordChange}
+                placeholder="Déjala vacía para conservar la actual"
+                minLength={8}
+                autoComplete="new-password"
+              />
+              <Field
+                icon={<LockKeyhole size={17} />}
+                label="Confirmar nueva contraseña"
+                type="password"
+                name="confirmar"
+                value={seguridad.confirmar}
+                onChange={handlePasswordChange}
+                placeholder="Repite la nueva contraseña"
+                minLength={8}
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="mt-6 flex items-start gap-3 rounded-lg border border-slate-100 bg-[#f0f4f8] p-4 text-[#2c3e50]">
+              <Info size={20} className="mt-0.5 shrink-0 text-[#3b4c7a]" />
+              <p className="text-sm font-medium">
+                La contraseña debe tener al menos 8 caracteres. Si no deseas cambiarla, deja ambos campos vacíos.
+              </p>
+            </div>
+          </section>
+        </div>
+
+        <aside className="flex flex-col gap-6 xl:col-span-4">
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-slate-800">Guardar cambios</h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">
+              Los cambios se guardarán en tu cuenta y se reflejarán en todas las vistas de StudyGo.
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="submit"
+                disabled={saving || !hasChanges}
+                className="w-full rounded-md bg-[#3b4c7a] py-2.5 font-medium text-white transition-colors hover:bg-[#2d3a5e] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {saving ? "Guardando..." : "Guardar cambios"}
+              </button>
+              <button
+                type="button"
+                onClick={discardChanges}
+                disabled={saving || !hasChanges}
+                className="w-full rounded-md border border-slate-300 bg-white py-2.5 font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Descartar
+              </button>
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-cyan-100 bg-cyan-50 p-5 text-cyan-900 shadow-sm">
+            <h3 className="font-semibold">Seguridad de la sesión</h3>
+            <p className="mt-2 text-xs leading-relaxed text-cyan-800">
+              Si modificas tu correo, StudyGo cerrará la sesión para emitir posteriormente un token asociado a la nueva dirección.
+            </p>
+          </section>
+        </aside>
+      </form>
     </PanelShell>
+  );
+}
+
+function Field({ icon, label, ...props }) {
+  return (
+    <label className="block text-sm font-medium text-slate-700">
+      {label}
+      <div className="relative mt-1.5">
+        <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+          {icon}
+        </span>
+        <input
+          {...props}
+          className="w-full rounded-md border border-slate-300 py-2 pl-10 pr-3 text-sm text-slate-800 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-[#3b4c7a]"
+        />
+      </div>
+    </label>
   );
 }
 
