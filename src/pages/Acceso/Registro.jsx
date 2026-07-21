@@ -1,45 +1,56 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
+import { authService } from "../../services/authService";
 
 function Registro() {
   const [nombre, setNombre] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [correo, setCorreo] = useState("");
+  const [contrasena, setContrasena] = useState("");
+  const [contrasenaConfirm, setContrasenaConfirm] = useState("");
   const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState("");
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
-  const { register } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setMensaje("");
     setLoading(true);
 
     try {
-      if (!nombre || !email || !password || !passwordConfirm) {
+      if (!nombre || !correo || !contrasena || !contrasenaConfirm) {
         setError("Por favor completa todos los campos");
         return;
       }
 
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
         setError("Correo electrónico inválido");
         return;
       }
 
-      if (password.length < 6) {
-        setError("La contraseña debe tener al menos 6 caracteres");
+      if (contrasena.length < 8) {
+        setError("La contraseña debe tener al menos 8 caracteres");
         return;
       }
 
-      if (password !== passwordConfirm) {
+      if (contrasena !== contrasenaConfirm) {
         setError("Las contraseñas no coinciden");
         return;
       }
 
-      await register(nombre, email, password, passwordConfirm);
-      navigate("/dashboard");
+      await authService.register(
+        nombre.trim(),
+        correo.trim(),
+        contrasena
+      );
+
+      setMensaje("Usuario registrado correctamente. Ahora inicia sesión.");
+
+      setTimeout(() => {
+        navigate("/");
+      }, 1200);
     } catch (err) {
       const message = err.message || "Error al registrarse";
       setError(message);
@@ -59,6 +70,12 @@ function Registro() {
         {error && (
           <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
             {error}
+          </div>
+        )}
+
+        {mensaje && (
+          <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded text-sm">
+            {mensaje}
           </div>
         )}
 
@@ -83,9 +100,9 @@ function Registro() {
             </label>
             <input
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@test.com"
+              value={correo}
+              onChange={(e) => setCorreo(e.target.value)}
+              placeholder="usuario@email.com"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               disabled={loading}
             />
@@ -97,8 +114,8 @@ function Registro() {
             </label>
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={contrasena}
+              onChange={(e) => setContrasena(e.target.value)}
               placeholder="••••••••"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               disabled={loading}
@@ -111,8 +128,8 @@ function Registro() {
             </label>
             <input
               type="password"
-              value={passwordConfirm}
-              onChange={(e) => setPasswordConfirm(e.target.value)}
+              value={contrasenaConfirm}
+              onChange={(e) => setContrasenaConfirm(e.target.value)}
               placeholder="••••••••"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               disabled={loading}
