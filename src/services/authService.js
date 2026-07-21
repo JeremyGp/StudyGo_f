@@ -8,16 +8,21 @@ export const authService = {
         contrasena,
       });
 
-      localStorage.setItem(
-        "authUser",
-        JSON.stringify(response.data.usuario)
-      );
+      const { access_token, token_type, usuario } = response.data;
 
-      return response.data;
+      localStorage.setItem("token", access_token);
+      localStorage.setItem("tokenType", token_type);
+      localStorage.setItem("authUser", JSON.stringify(usuario));
+
+      return {
+        token: access_token,
+        tokenType: token_type,
+        user: usuario,
+      };
     } catch (error) {
       throw new Error(
         error.response?.data?.detail ||
-        "Correo o contraseña incorrectos."
+          "Correo o contraseña incorrectos."
       );
     }
   },
@@ -40,6 +45,8 @@ export const authService = {
   },
 
   logout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("tokenType");
       localStorage.removeItem("authUser");
   },
 
@@ -48,7 +55,11 @@ export const authService = {
       return usuario ? JSON.parse(usuario) : null;
   },
 
+  getToken() {
+      return localStorage.getItem("token");
+  },
+
   isAuthenticated() {
-      return this.getCurrentUser() !== null;
+      return this.getToken() !== null;
   },
 };
