@@ -143,11 +143,7 @@ function Dashboard() {
     { name: "Dashboard", icon: "▣", path: "/dashboard" },
     { name: "Mi Agenda", icon: "◷", path: "/mi-agenda" },
     { name: "Mis Asignaturas", icon: "◫", path: "/mis-asignaturas" },
-    { name: "Planes Académicos", icon: "▣", path: "/planes-academicos" },
-    { name: "Progreso", icon: "◔", path: "/progreso" },
-    { name: "Directorio", icon: "◍", path: "/directorio" },
     { name: "Horarios", icon: "◌", path: "/horarios" },
-    { name: "Tutor IA", icon: "◎", path: "/tutor-ia" },
     { name: "Ajustes", icon: "⚙", path: "/ajustes" },
   ];
 
