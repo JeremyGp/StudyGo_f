@@ -9,11 +9,10 @@ import { tareaService } from "../../services/tarea";
 const DAYS = [
   { value: "Lunes", label: "Lunes" },
   { value: "Martes", label: "Martes" },
-  { value: "Miércoles", label: "Miércoles" },
+  { value: "Miercoles", label: "Miércoles" },
   { value: "Jueves", label: "Jueves" },
   { value: "Viernes", label: "Viernes" },
-  { value: "Sábado", label: "Sábado" },
-  { value: "Domingo", label: "Domingo" },
+  { value: "Sabado", label: "Sábado" },
 ];
 
 const normalizeDay = (day) =>
@@ -121,7 +120,7 @@ function Horarios() {
       const now = new Date();
       const currentWeek = getWeekDays();
       const weekStart = currentWeek[0].date;
-      const weekEnd = new Date(currentWeek[6].date);
+      const weekEnd = new Date(currentWeek[currentWeek.length - 1].date);
       weekEnd.setHours(23, 59, 59, 999);
       const recommendedBlocks = pendingTasks.flatMap((task, index) => {
         const result = planResults[index];
@@ -354,7 +353,7 @@ function Horarios() {
           <div
             className="grid min-w-[1200px]"
             style={{
-              gridTemplateColumns: "72px repeat(7, minmax(150px, 1fr))",
+              gridTemplateColumns: `72px repeat(${weekDays.length}, minmax(150px, 1fr))`,
               gridTemplateRows: `56px repeat(${TOTAL_SLOTS}, 32px)`,
             }}
           >
