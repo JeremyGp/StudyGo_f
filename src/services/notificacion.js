@@ -1,13 +1,11 @@
 import axiosInstance from "../config/axiosInstance";
 
 export const notificacionService = {
-  async crear(datos, idTarea = null) {
-    const config = {};
+  async crear(_idUsuario, datos, idTarea = null) {
+    let url = `/notificaciones`;
 
     if (idTarea !== null) {
-      config.params = {
-        id_tarea: idTarea,
-      };
+      url += `?id_tarea=${idTarea}`;
     }
 
     const response = await axiosInstance.post(
@@ -20,17 +18,13 @@ export const notificacionService = {
   },
 
   async obtenerPorId(idNotificacion) {
-    const response = await axiosInstance.get(
-      `/notificaciones/${idNotificacion}`
-    );
+    const response = await axiosInstance.get(`/notificaciones/${idNotificacion}`);
 
     return response.data;
   },
 
-  async listar() {
-    const response = await axiosInstance.get(
-      "/notificaciones"
-    );
+  async listar(_idUsuario) {
+    const response = await axiosInstance.get(`/notificaciones`);
 
     return response.data;
   },
