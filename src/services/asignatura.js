@@ -1,9 +1,9 @@
 import axiosInstance from "../config/axiosInstance";
 
 export const asignaturaService = {
-  async crear(idUsuario, datos) {
+  async crear(datos) {
     const response = await axiosInstance.post(
-      `/asignaturas?id_usuario=${idUsuario}`,
+      "/asignaturas",
       datos
     );
 
@@ -18,9 +18,9 @@ export const asignaturaService = {
     return response.data;
   },
 
-  async listar(idUsuario) {
+  async listar() {
     const response = await axiosInstance.get(
-      `/asignaturas?id_usuario=${idUsuario}`
+      "/asignaturas"
     );
 
     return response.data;

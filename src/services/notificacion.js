@@ -1,14 +1,20 @@
 import axiosInstance from "../config/axiosInstance";
 
 export const notificacionService = {
-  async crear(idUsuario, datos, idTarea = null) {
-    let url = `/notificaciones?id_usuario=${idUsuario}`;
+  async crear(datos, idTarea = null) {
+    const config = {};
 
     if (idTarea !== null) {
-      url += `&id_tarea=${idTarea}`;
+      config.params = {
+        id_tarea: idTarea,
+      };
     }
 
-    const response = await axiosInstance.post(url, datos);
+    const response = await axiosInstance.post(
+      "/notificaciones",
+      datos,
+      config
+    );
 
     return response.data;
   },
@@ -21,9 +27,9 @@ export const notificacionService = {
     return response.data;
   },
 
-  async listar(idUsuario) {
+  async listar() {
     const response = await axiosInstance.get(
-      `/notificaciones?id_usuario=${idUsuario}`
+      "/notificaciones"
     );
 
     return response.data;

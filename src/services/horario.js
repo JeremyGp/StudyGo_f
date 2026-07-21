@@ -3,8 +3,13 @@ import axiosInstance from "../config/axiosInstance";
 export const horarioService = {
   async crear(idAsignatura, datos) {
     const response = await axiosInstance.post(
-      `/horarios?id_asignatura=${idAsignatura}`,
-      datos
+      "/horarios",
+      datos,
+      {
+        params: {
+          id_asignatura: idAsignatura,
+        },
+      }
     );
 
     return response.data;
@@ -20,7 +25,12 @@ export const horarioService = {
 
   async listar(idAsignatura) {
     const response = await axiosInstance.get(
-      `/horarios?id_asignatura=${idAsignatura}`
+      "/horarios",
+      {
+        params: {
+          id_asignatura: idAsignatura,
+        },
+      }
     );
 
     return response.data;

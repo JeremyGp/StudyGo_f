@@ -1,11 +1,15 @@
 import axiosInstance from "../config/axiosInstance";
 
 export const tareaService = {
-  // CRUD de tareas
   async crear(idAsignatura, datos) {
     const response = await axiosInstance.post(
-      `/tareas?id_asignatura=${idAsignatura}`,
-      datos
+      "/tareas",
+      datos,
+      {
+        params: {
+          id_asignatura: idAsignatura,
+        },
+      }
     );
 
     return response.data;
@@ -18,7 +22,12 @@ export const tareaService = {
 
   async listar(idAsignatura) {
     const response = await axiosInstance.get(
-      `/tareas?id_asignatura=${idAsignatura}`
+      "/tareas",
+      {
+        params: {
+          id_asignatura: idAsignatura,
+        },
+      }
     );
 
     return response.data;
@@ -37,7 +46,6 @@ export const tareaService = {
     await axiosInstance.delete(`/tareas/${idTarea}`);
   },
 
-  // CRUD de subtareas
   async crearSubtarea(idTarea, datos) {
     const response = await axiosInstance.post(
       `/tareas/${idTarea}/subtareas`,
