@@ -33,12 +33,18 @@ function Login() {
 
       const response = await authService.login(email, password);
 
-      if (response && response.token) {
+      if (response && response.token && response.user) {
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("tokenType", response.tokenType);
+        localStorage.setItem("authUser", JSON.stringify(response.user));
+
         if (rememberMe) {
           localStorage.setItem("rememberEmail", email);
+        } else {
+          localStorage.removeItem("rememberEmail");
         }
+
         dispatch(loginSuccess(response));
-        localStorage.setItem("token", response.token);
         navigate("/dashboard");
       } else {
         setError("Error al iniciar sesión");

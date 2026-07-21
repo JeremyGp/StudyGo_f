@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -29,6 +29,8 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
+      localStorage.removeItem("tokenType");
+      localStorage.removeItem("authUser");
       window.location.href = "/";
     }
     return Promise.reject(error);
