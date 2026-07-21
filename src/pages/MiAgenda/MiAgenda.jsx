@@ -77,9 +77,7 @@ function MiAgenda() {
     <PanelShell
       title="Mi Agenda"
       subtitle="Organiza tus asignaturas, tareas y recordatorios desde un solo lugar."
-      actionLabel="Nueva tarea"
-      onAction={() => {}}
-    >
+         >
       <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
           <div className="flex items-center justify-between">
@@ -195,6 +193,7 @@ function MiAgenda() {
                   <option value="Media">Media</option>
                   <option value="Baja">Baja</option>
                 </select>
+                <label className="text-xs font-semibold text-slate-500">Horas estimadas</label>
                 <input
                   type="number"
                   min="1"
