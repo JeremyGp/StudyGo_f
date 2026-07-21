@@ -280,7 +280,42 @@
 .form-input::placeholder {
   color: #999;
 }
+/* ============================================
+   PASSWORD TOGGLE (NUEVO)
+   ============================================ */
 
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper .form-input {
+  padding-right: 45px; /* Deja espacio para el botón del ojito para que el texto no lo pise */
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: #888888; /* Color gris profesional para el ícono */
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.password-toggle-btn:hover {
+  color: #667eea; /* Toma el color de tu tema (morado/azul) al pasar el mouse */
+  transform: scale(1.05);
+}
+
+.password-toggle-btn:focus {
+  outline: none;
+}
 /* Remember Me Checkbox */
 .form-remember {
   display: flex;
