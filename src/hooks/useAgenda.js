@@ -10,19 +10,25 @@ export function useAgenda() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
-  const crearAsignaturaInicial = useCallback(async () => {
+ const creandoRef = useRef(false);
+
+const crearAsignaturaInicial = useCallback(async () => {
+  if (creandoRef.current) return;
+  creandoRef.current = true;
+  try {
     const creada = await asignaturaService.crear(null, {
       nombre: "Asignatura inicial",
       descripcion: "Asignatura creada automáticamente para gestionar tus tareas.",
       ciclo: "Actual",
       docente: "Sin asignar",
     });
-
     setAsignaturas([creada]);
     setSeleccionada(creada.id_asignatura);
     return creada;
-  }, []);
-
+  } finally {
+    creandoRef.current = false;
+  }
+}, []);
   const cargarDatos = useCallback(async () => {
     try {
       setCargando(true);
